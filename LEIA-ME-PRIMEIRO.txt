@@ -1,0 +1,17 @@
+AURACD 2.6 - DISTRIBUICAO PARA WINDOWS
+
+PARA PUBLICAR:
+1. Abra GUIA_PUBLICACAO_GITHUB.md.
+2. Envie toda esta pasta para o repositorio AuraCD.
+3. Ative o GitHub Pages usando GitHub Actions.
+4. Execute o workflow "Gerar instalador Windows".
+
+PARA O USUARIO FINAL:
+- Baixa AuraCD-Setup.exe pelo site.
+- Instala em uma interface grafica.
+- Recebe um icone na area de trabalho.
+- Abre o AuraCD sem terminal e sem tela preta.
+
+IMPORTANTE:
+Os arquivos BAT desta pasta sao ferramentas de desenvolvimento e nao fazem
+parte da experiencia do usuario instalado.

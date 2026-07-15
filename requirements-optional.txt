@@ -1,0 +1,4 @@
+# Opcional: somente para abrir em janela desktop embutida.
+pywebview>=5.4,<7
+# Opcional: leitor de TOC/Disc ID oficial. O AuraCD funciona sem ele pelo MCI do Windows.
+discid>=1.4,<2

@@ -1,0 +1,132 @@
+name: Gerar instalador Windows
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Versão, por exemplo 2.6.0"
+        required: true
+        default: "2.6.0"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONUTF8: "1"
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Baixar o projeto
+        uses: actions/checkout@v7
+
+      - name: Preparar Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: |
+            requirements.txt
+            requirements-build.txt
+
+      - name: Preparar a versão
+        shell: pwsh
+        run: python packaging/set_version.py "${{ inputs.version }}"
+
+      - name: Instalar dependências
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install -r requirements-build.txt
+          python -m pip install "pywebview>=6.1,<7"
+
+      - name: Executar testes
+        shell: pwsh
+        env:
+          AURACD_DEMO: "1"
+        run: python -m unittest discover -s tests -v
+
+      - name: Gerar aplicativo sem console
+        shell: pwsh
+        run: python -m PyInstaller --noconfirm --clean AuraCD.spec
+
+      - name: Instalar compilador do instalador
+        shell: pwsh
+        run: choco install innosetup --no-progress -y
+
+      - name: Preparar e assinar o aplicativo, quando houver certificado
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:WINDOWS_CERTIFICATE_BASE64)) {
+            Write-Host "Certificado não configurado: o aplicativo será publicado sem assinatura digital."
+            exit 0
+          }
+          $certificate = "$env:RUNNER_TEMP\auracd-cert.pfx"
+          [IO.File]::WriteAllBytes($certificate, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE_BASE64))
+          $signTool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Recurse -Filter signtool.exe | Sort-Object FullName -Descending | Select-Object -First 1
+          if (-not $signTool) { throw "SignTool não encontrado" }
+          & $signTool.FullName sign /fd SHA256 /f $certificate /p "$env:WINDOWS_CERTIFICATE_PASSWORD" /tr http://timestamp.digicert.com /td SHA256 "dist\AuraCD\AuraCD.exe"
+          if ($LASTEXITCODE -ne 0) { throw "Falha ao assinar AuraCD.exe" }
+
+      - name: Gerar instalador gráfico
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { $iscc = "$env:ProgramFiles\Inno Setup 6\ISCC.exe" }
+          if (-not (Test-Path $iscc)) { throw "Inno Setup não encontrado" }
+          & $iscc "/DMyAppVersion=${{ inputs.version }}" "installer\AuraCD.iss"
+          if ($LASTEXITCODE -ne 0) { throw "Falha ao gerar o instalador" }
+
+      - name: Assinar o instalador, quando houver certificado
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:WINDOWS_CERTIFICATE_BASE64)) {
+            Write-Host "Certificado não configurado: o instalador será publicado sem assinatura digital."
+            exit 0
+          }
+          $certificate = "$env:RUNNER_TEMP\auracd-cert.pfx"
+          if (-not (Test-Path $certificate)) {
+            [IO.File]::WriteAllBytes($certificate, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE_BASE64))
+          }
+          $signTool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Recurse -Filter signtool.exe | Sort-Object FullName -Descending | Select-Object -First 1
+          if (-not $signTool) { throw "SignTool não encontrado" }
+          & $signTool.FullName sign /fd SHA256 /f $certificate /p "$env:WINDOWS_CERTIFICATE_PASSWORD" /tr http://timestamp.digicert.com /td SHA256 "dist_installer\AuraCD-Setup.exe"
+          if ($LASTEXITCODE -ne 0) { throw "Falha ao assinar AuraCD-Setup.exe" }
+
+      - name: Gerar checksum
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash "dist_installer\AuraCD-Setup.exe" -Algorithm SHA256).Hash.ToLower()
+          "$hash  AuraCD-Setup.exe" | Set-Content "dist_installer\AuraCD-Setup.exe.sha256" -Encoding ascii
+
+      - name: Guardar instalador como artefato
+        uses: actions/upload-artifact@v7
+        with:
+          name: AuraCD-Setup-${{ inputs.version }}
+          path: |
+            dist_installer/AuraCD-Setup.exe
+            dist_installer/AuraCD-Setup.exe.sha256
+          if-no-files-found: error
+
+      - name: Criar ou atualizar a Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "v${{ inputs.version }}"
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $tag --title "AuraCD ${{ inputs.version }}" --notes "Instalador para Windows 10/11. Interface Hi-Fi, reprodução de CDs e acervo pessoal."
+            if ($LASTEXITCODE -ne 0) { throw "Falha ao criar a Release" }
+          }
+          gh release upload $tag "dist_installer\AuraCD-Setup.exe" "dist_installer\AuraCD-Setup.exe.sha256" --clobber
+          if ($LASTEXITCODE -ne 0) { throw "Falha ao enviar o instalador para a Release" }

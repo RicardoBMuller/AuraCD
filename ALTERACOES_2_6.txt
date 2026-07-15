@@ -1,0 +1,13 @@
+AURACD 2.6 - DISTRIBUICAO
+
+- Site completo pronto para GitHub Pages na pasta docs.
+- Workflow para publicar o site automaticamente.
+- Workflow Windows para gerar e publicar AuraCD-Setup.exe.
+- Aplicativo empacotado sem console ou janela preta.
+- Instalador grafico em portugues.
+- Atalho da area de trabalho criado obrigatoriamente.
+- Atalho do menu Iniciar e desinstalador.
+- Instalacao por usuario, normalmente sem solicitar administrador.
+- Instancia unica para evitar dois AuraCD abertos.
+- Assinatura digital opcional por Secrets do GitHub.
+- Download do site sempre aponta para a Release mais recente.

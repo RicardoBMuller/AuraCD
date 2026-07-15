@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#090b0d">
+  <meta name="description" content="AuraCD — central Hi‑Fi retrô para CDs de áudio.">
+  <title>AuraCD Hi‑Fi Collection</title>
+  <link rel="icon" href="/static/img/icon-192.png">
+  <link rel="stylesheet" href="/static/css/style.css?v=2.6.0">
+</head>
+<body>
+  <div class="room-glow" aria-hidden="true"></div>
+  <div class="noise-layer" aria-hidden="true"></div>
+  <div class="scanline-overlay" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <button class="round-button" id="menuButton" type="button" aria-label="Abrir menu">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="brand" aria-label="AuraCD">
+      <span class="brand-main"><span class="brand-aura">AURA</span><span class="brand-cd">CD</span></span>
+      <small>REMOTE CONTROLLED COMPACT DISC SYSTEM</small>
+    </div>
+    <div class="top-actions">
+      <span class="app-badge"><i></i> LOCAL LINK</span>
+      <button class="settings-button" id="settingsButton" type="button">SETUP</button>
+    </div>
+  </header>
+
+  <main class="app-layout">
+    <section class="player-column">
+      <article class="player-card rack-unit">
+        <i class="rack-screw screw-tl" aria-hidden="true"></i>
+        <i class="rack-screw screw-tr" aria-hidden="true"></i>
+        <i class="rack-screw screw-bl" aria-hidden="true"></i>
+        <i class="rack-screw screw-br" aria-hidden="true"></i>
+
+        <div class="model-strip">
+          <div class="model-copy"><strong>AuraCD</strong><span>CDP‑2400 DIGITAL AUDIO</span></div>
+          <div class="format-marks"><span>COMPACT</span><b>disc</b><span>DIGITAL AUDIO</span></div>
+        </div>
+
+        <div class="device-strip">
+          <div class="device-state">
+            <span class="status-dot" id="statusDot"></span>
+            <span id="deviceStatus">Procurando leitor…</span>
+          </div>
+          <div class="drive-tools">
+            <select id="driveSelect" aria-label="Selecionar leitor de CD"></select>
+            <button class="tiny-button" id="scanButton" type="button" title="Ler o CD novamente">SCAN</button>
+            <button class="tiny-button eject" id="ejectButton" type="button" title="Ejetar CD">OPEN/CLOSE</button>
+          </div>
+        </div>
+
+        <div class="display-deck">
+          <div class="disc-stage">
+            <div class="tray-label">MOTORIZED DISC TRAY</div>
+            <div class="disc-shell" id="discShell">
+              <img id="coverImage" src="/static/img/disc-placeholder.svg" alt="Capa do álbum">
+              <div class="disc-shine"></div>
+              <div class="disc-hole"></div>
+            </div>
+            <div class="laser-line" aria-hidden="true"></div>
+            <div class="track-chip" id="trackChip">
+              <span class="chip-dot"></span>
+              <span id="trackChipText">NO DISC</span>
+            </div>
+          </div>
+
+          <div class="lcd-cluster">
+            <div class="lcd-header"><span>TRACK</span><span>INDEX</span><span>TIME</span></div>
+            <section class="now-playing" aria-live="polite">
+              <h1 id="trackTitle">INSIRA UM CD DE ÁUDIO</h1>
+              <p id="artistName">Aguardando leitura do disco</p>
+              <p class="album-line" id="albumName">—</p>
+            </section>
+            <div class="equalizer" id="equalizer" aria-hidden="true">
+              <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <section class="vu-deck" id="vuDeck" aria-hidden="true">
+              <div class="vu-meter"><span class="vu-label">L</span><i class="vu-needle"></i><b>−20&nbsp;&nbsp;−10&nbsp;&nbsp;0&nbsp;&nbsp;+3</b></div>
+              <div class="vu-meter"><span class="vu-label">R</span><i class="vu-needle"></i><b>−20&nbsp;&nbsp;−10&nbsp;&nbsp;0&nbsp;&nbsp;+3</b></div>
+              <div class="power-lamp"><span></span><small>STEREO</small></div>
+            </section>
+          </div>
+        </div>
+
+        <section class="transport-deck">
+          <section class="progress-section">
+            <div class="progress-labels"><span>ELAPSED</span><span>REMAIN</span></div>
+            <input id="progressRange" class="progress-range" type="range" min="0" max="100" value="0" step="0.1" aria-label="Posição da música">
+            <div class="time-row"><span id="elapsedTime">0:00</span><span id="remainingTime">0:00</span></div>
+          </section>
+
+          <section class="controls" aria-label="Controles do player">
+            <button class="control-button" id="lyricsQuickButton" type="button" title="Abrir letra"><span>DISPLAY</span><small>LYRICS</small></button>
+            <button class="control-button" id="previousButton" type="button" title="Faixa anterior"><span>◀◀</span><small>PREV</small></button>
+            <button class="play-button" id="playButton" type="button" aria-label="Reproduzir"><span id="playIcon">▶</span><small>PLAY / PAUSE</small></button>
+            <button class="control-button" id="nextButton" type="button" title="Próxima faixa"><span>▶▶</span><small>NEXT</small></button>
+            <button class="control-button toggle" id="shuffleButton" type="button" title="Aleatório"><span>RND</span><small>RANDOM</small></button>
+            <button class="control-button toggle" id="repeatButton" type="button" title="Repetição"><span id="repeatLabel">REP</span><small>REPEAT</small></button>
+          </section>
+
+          <section class="volume-row">
+            <span class="meter-label" aria-hidden="true">PHONES / LEVEL</span>
+            <input id="volumeRange" type="range" min="0" max="100" value="80" aria-label="Volume">
+            <button class="volume-knob" id="volumeKnob" type="button" role="slider" aria-label="Volume do mini system" aria-valuemin="0" aria-valuemax="100" aria-valuenow="80" title="Arraste, clique ou use a roda do mouse para ajustar"><i></i><small>VOL</small></button>
+          </section>
+        </section>
+      </article>
+    </section>
+
+    <section class="content-panel rack-unit" id="contentPanel">
+      <i class="rack-screw screw-tl" aria-hidden="true"></i>
+      <i class="rack-screw screw-tr" aria-hidden="true"></i>
+      <i class="rack-screw screw-bl" aria-hidden="true"></i>
+      <i class="rack-screw screw-br" aria-hidden="true"></i>
+
+      <div class="panel-model-strip">
+        <div><strong>PROGRAM INFORMATION PROCESSOR</strong><span>REMOTE TEXT / COLLECTION TERMINAL</span></div>
+        <span class="memory-led"><i></i> MEMORY</span>
+      </div>
+
+      <div class="panel-tabs">
+        <button class="panel-tab active" data-panel="tracksPanel" type="button"><span>1</span>TRACK LIST</button>
+        <button class="panel-tab" data-panel="lyricsPanel" type="button"><span>2</span>LYRICS</button>
+        <button class="panel-tab" data-panel="artistPanel" type="button"><span>3</span>ARTIST</button>
+        <button class="panel-tab" data-panel="collectionPanel" type="button"><span>4</span>ACERVO</button>
+      </div>
+
+      <div class="panel-screen">
+        <div class="panel-view active" id="tracksPanel">
+          <div class="identify-banner" id="identifyBanner">
+            <div class="identify-icon" aria-hidden="true">?</div>
+            <div class="identify-copy">
+              <strong>DISC DATA NOT FOUND</strong>
+              <p>Pesquise pelo artista ou álbum. A escolha ficará salva para este CD.</p>
+              <div class="diagnostic-row" id="identifyDiagnostic"></div>
+            </div>
+            <button class="primary-action identify-action" id="identifyButton" type="button"><span>IDENTIFY</span><small>SEARCH DISC</small></button>
+          </div>
+          <div class="panel-heading">
+            <div><span class="eyebrow">DISC INFORMATION</span><h2 id="tracksAlbumTitle">Nenhum disco carregado</h2></div>
+            <span class="track-count" id="trackCount">0 faixas</span>
+          </div>
+          <div class="track-list" id="trackList">
+            <div class="empty-state"><div class="empty-disc">CD</div><p>Insira um CD para ver as músicas.</p></div>
+          </div>
+        </div>
+
+        <div class="panel-view" id="lyricsPanel">
+          <div class="panel-heading"><div><span class="eyebrow">TEXT DISPLAY</span><h2 id="lyricsTitle">Nenhuma faixa selecionada</h2></div><span class="provider-badge">LRCLIB</span></div>
+          <div class="lyrics-content" id="lyricsContent"><p class="muted">A letra aparecerá aqui quando uma faixa identificada for selecionada.</p></div>
+        </div>
+
+        <div class="panel-view" id="artistPanel">
+          <div class="artist-hero"><img id="artistImage" src="/static/img/disc-placeholder.svg" alt="Imagem do artista"><div><span class="eyebrow">ARTIST FILE</span><h2 id="artistPanelName">Artista</h2><div class="tag-list" id="artistTags"></div></div></div>
+          <p class="biography" id="artistBiography">As informações aparecerão após a identificação do CD.</p>
+          <a class="source-link hidden" id="artistSource" href="#" target="_blank" rel="noreferrer">Abrir fonte completa ↗</a>
+          <div class="discography-block"><div class="panel-heading compact"><h3>Discografia</h3><span class="provider-badge">MusicBrainz</span></div><div class="discography-grid" id="discographyGrid"><p class="muted">Nenhum lançamento carregado.</p></div></div>
+        </div>
+
+        <div class="panel-view" id="collectionPanel">
+          <div class="panel-heading collection-heading">
+            <div><span class="eyebrow">PERSONAL MUSIC ARCHIVE</span><h2>Meu acervo de CDs</h2></div>
+            <span class="provider-badge" id="collectionUpdated">LOCAL MEMORY</span>
+          </div>
+          <div class="collection-summary" id="collectionSummary">
+            <article class="stat-module"><small>ÁLBUNS</small><strong id="statAlbums">0</strong><span>CDs catalogados</span></article>
+            <article class="stat-module"><small>ARTISTAS</small><strong id="statArtists">0</strong><span>Bandas e artistas</span></article>
+            <article class="stat-module"><small>REPRODUÇÕES</small><strong id="statPlays">0</strong><span>Faixas iniciadas</span></article>
+            <article class="stat-module"><small>TEMPO</small><strong id="statTime">0h</strong><span>Tempo escutado</span></article>
+          </div>
+          <div class="collection-insights">
+            <section class="archive-module">
+              <div class="archive-module-head"><span>ESTILOS MAIS PRESENTES</span><b id="favoriteGenre">—</b></div>
+              <div class="genre-bars" id="genreBars"><p class="muted">Seu estilo aparecerá conforme os CDs forem catalogados.</p></div>
+            </section>
+            <section class="archive-module">
+              <div class="archive-module-head"><span>ARTISTAS MAIS OUVIDOS</span><b>PLAY COUNT</b></div>
+              <div class="top-artists" id="topArtists"><p class="muted">Nenhuma reprodução registrada.</p></div>
+            </section>
+          </div>
+          <div class="collection-toolbar">
+            <div><span class="eyebrow">ALBUM LIBRARY</span><strong id="collectionCount">0 itens</strong></div>
+            <label class="archive-search"><span>SEARCH</span><input id="collectionSearch" type="search" placeholder="Banda, álbum ou estilo"></label>
+            <select id="collectionSort" aria-label="Ordenar acervo">
+              <option value="recent">Mais recentes</option>
+              <option value="played">Mais ouvidos</option>
+              <option value="artist">Artista A–Z</option>
+              <option value="album">Álbum A–Z</option>
+            </select>
+          </div>
+          <div class="collection-gallery" id="collectionGallery">
+            <div class="collection-empty"><div class="archive-disc">CD</div><p>Os CDs identificados aparecerão automaticamente nesta galeria.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <aside class="drawer" id="drawer" aria-hidden="true">
+    <div class="drawer-head"><div class="brand small-brand"><span class="brand-main"><span class="brand-aura">AURA</span><span class="brand-cd">CD</span></span><small>HI‑FI SYSTEM</small></div><button class="tiny-button" id="closeDrawerButton" type="button">CLOSE</button></div>
+    <h2>REMOTE COMMANDS</h2>
+    <p><strong>Espaço:</strong> reproduzir ou pausar</p><p><strong>← / →:</strong> faixa anterior ou próxima</p><p><strong>L:</strong> abrir letra</p>
+    <div class="provider-box"><strong>DATA SOURCES</strong><p>MusicBrainz, GnuDB, Cover Art Archive, Wikipedia, LRCLIB e o acervo local do AuraCD.</p></div>
+    <p class="drawer-note">O navegador funciona como painel remoto. O conector local Python deve permanecer aberto para controlar o leitor físico.</p>
+  </aside>
+  <div class="drawer-backdrop" id="drawerBackdrop"></div>
+
+  <div class="modal-backdrop" id="identifyModal" aria-hidden="true">
+    <section class="modal-card wide" role="dialog" aria-modal="true" aria-labelledby="identifyModalTitle">
+      <div class="modal-head"><div><span class="eyebrow">DISC DATABASE TERMINAL</span><h2 id="identifyModalTitle">Identificar este CD</h2><p>Digite artista, álbum ou ambos. Os resultados com a mesma quantidade de faixas aparecem primeiro.</p></div><button class="close-modal" data-close-modal="identifyModal" type="button">✕</button></div>
+      <form class="inline-form" id="releaseSearchForm"><input id="releaseSearchInput" type="search" placeholder="Ex.: Iron Maiden Powerslave" autocomplete="off" required><button class="primary-action" type="submit">SEARCH</button></form>
+      <p class="search-help">A associação selecionada fica salva no computador para as próximas leituras.</p>
+      <div class="release-results" id="releaseResults"><p class="muted">Os resultados aparecerão aqui.</p></div>
+      <div class="manual-divider">MANUAL DATA ENTRY</div>
+      <div class="form-grid">
+        <label class="form-field"><span>Artista</span><input id="manualArtist" type="text" placeholder="Nome da banda ou artista"></label>
+        <label class="form-field"><span>Álbum</span><input id="manualAlbum" type="text" placeholder="Nome do álbum"></label>
+        <div class="form-field full"><span>Títulos das faixas</span><div id="manualTrackTitles"></div></div>
+      </div>
+      <div class="modal-actions"><button class="secondary-action" id="retryAutomaticButton" type="button">RETRY AUTO</button><button class="primary-action" id="saveManualButton" type="button">SAVE DISC DATA</button></div>
+    </section>
+  </div>
+
+  <div class="modal-backdrop" id="settingsModal" aria-hidden="true">
+    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
+      <div class="modal-head"><div><span class="eyebrow">SYSTEM SETUP</span><h2 id="settingsModalTitle">Configurações</h2><p>As preferências ficam salvas no usuário atual do Windows.</p></div><button class="close-modal" data-close-modal="settingsModal" type="button">✕</button></div>
+      <div class="provider-status-grid"><div class="provider-status ok"><strong>MusicBrainz + GnuDB</strong><small>Álbuns e faixas</small></div><div class="provider-status ok"><strong>LRCLIB</strong><small>Letras sem chave</small></div><div class="provider-status ok"><strong>Acervo AuraCD</strong><small>Galeria e estatísticas locais</small></div></div>
+      <div class="form-grid">
+        <label class="form-field full"><span>Contato do MusicBrainz</span><input id="musicbrainzContact" type="email" placeholder="seu-email@exemplo.com"><small>Usado somente nos cabeçalhos técnicos exigidos pelas consultas.</small></label>
+      </div>
+      <div class="settings-switches"><label class="settings-switch"><span><strong>Buscar letra automaticamente</strong><small>Ao iniciar uma faixa identificada.</small></span><input id="autoLyricsToggle" type="checkbox"></label></div>
+      <div class="settings-note">O acervo pessoal é salvo apenas neste computador, em sua pasta de usuário do Windows.</div>
+      <div class="modal-actions"><button class="danger-action" id="clearCollectionButton" type="button">CLEAR LIBRARY</button><button class="secondary-action" id="clearCacheButton" type="button">CLEAR CACHE</button><button class="primary-action" id="saveSettingsButton" type="button">SAVE SETUP</button></div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="/static/js/app.js?v=2.6.0" defer></script>
+</body>
+</html>
