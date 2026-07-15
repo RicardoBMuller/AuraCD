@@ -3,115 +3,206 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#121314">
-  <meta name="description" content="AuraCD: player Hi-Fi retrô para ouvir CDs, identificar álbuns e criar um acervo pessoal.">
-  <title>AuraCD — seu acervo de CDs em alta fidelidade</title>
-  <link rel="icon" href="assets/icon-192.png">
+  <meta name="theme-color" content="#090b0c">
+  <meta name="description" content="Baixe o AuraCD, um player Hi-Fi retrô para ouvir CDs no Windows e construir seu acervo pessoal de álbuns.">
+  <meta property="og:title" content="AuraCD — o ritual de ouvir CDs voltou">
+  <meta property="og:description" content="Player Hi-Fi retrô para Windows, com identificação de álbuns e acervo pessoal.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="assets/auracd-preview.png">
+  <title>AuraCD — Player de CDs para Windows</title>
+  <link rel="icon" sizes="192x192" href="assets/icon-192.png">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="ambient ambient-one"></div>
-  <div class="ambient ambient-two"></div>
+  <div class="boot-screen" id="boot-screen" aria-hidden="true">
+    <div class="boot-logo"><span>AURA</span><b>CD</b></div>
+    <p>COMPACT DISC HI-FI SYSTEM</p>
+    <div class="boot-line"><i></i></div>
+  </div>
+
+  <div class="room-glow room-glow-left"></div>
+  <div class="room-glow room-glow-right"></div>
+  <div class="noise" aria-hidden="true"></div>
 
   <header class="topbar shell">
     <a class="brand" href="#inicio" aria-label="AuraCD — início">
-      <span class="brand-mark"><i></i><i></i><i></i></span>
-      <span><b>Aura</b>CD<small>COMPACT DISC HI-FI SYSTEM</small></span>
+      <span class="brand-emblem" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="brand-name">Aura<span>CD</span><small>PERSONAL COMPACT DISC SYSTEM</small></span>
     </a>
-    <nav>
-      <a href="#recursos">Recursos</a>
-      <a href="#instalacao">Instalação</a>
-      <a href="#requisitos">Requisitos</a>
-    </nav>
-    <a class="button button-small download-link" href="#">Baixar para Windows</a>
+
+    <div class="topbar-actions">
+      <span class="availability"><i></i> DISPONÍVEL PARA WINDOWS</span>
+      <a class="download-button download-link" href="#" data-download="header">
+        <span class="download-icon">⇩</span>
+        <span>Baixar AuraCD</span>
+      </a>
+    </div>
   </header>
 
   <main id="inicio">
     <section class="hero shell">
       <div class="hero-copy reveal">
-        <p class="eyebrow"><span></span> PLAYER LOCAL PARA WINDOWS</p>
-        <h1>O ritual do CD com a praticidade de um <em>acervo digital.</em></h1>
-        <p class="lead">Insira um CD, aperte o play e deixe o AuraCD buscar capa, álbum, faixas, letras e informações do artista. Cada audição passa a fazer parte da sua galeria pessoal.</p>
+        <div class="kicker"><span></span> O PLAYER QUE SEUS CDs MERECIAM</div>
+        <h1>O ritual de ouvir um CD, <em>de volta à sua mesa.</em></h1>
+        <p class="lead">Coloque o disco no leitor, aperte o play e redescubra sua coleção. O AuraCD identifica álbum, artista e faixas, salva tudo no seu acervo pessoal e transforma o computador em um verdadeiro mini system Hi-Fi.</p>
+
         <div class="hero-actions">
-          <a class="button download-link" href="#"><span>↓</span> Baixar AuraCD</a>
-          <a class="button button-ghost" href="#instalacao">Como instalar</a>
+          <a class="primary-download download-link" href="#" data-download="hero">
+            <span class="primary-download-icon">⇩</span>
+            <span class="primary-download-copy">
+              <b>Baixar para Windows</b>
+              <small id="release-label">Buscando a versão mais recente…</small>
+            </span>
+          </a>
+          <a class="release-link" id="release-page-link" href="https://github.com/ricardobmuller/AuraCD/releases/latest" target="_blank" rel="noopener">Ver detalhes da versão ↗</a>
         </div>
-        <div class="release-meta" aria-live="polite">
-          <span class="status-dot"></span>
-          <span id="release-status">Consultando a versão mais recente…</span>
+
+        <div class="trust-row">
+          <span><i>✓</i> Instalador gráfico</span>
+          <span><i>✓</i> Sem tela preta</span>
+          <span><i>✓</i> Sem conta obrigatória</span>
         </div>
       </div>
 
-      <div class="deck reveal delay-one" aria-label="Representação de um aparelho de som retrô">
-        <div class="deck-top">
-          <span>AURACD</span><small>DIGITAL AUDIO COLLECTION SYSTEM</small>
-          <div class="power"><i></i> POWER</div>
-        </div>
-        <div class="deck-panel">
-          <div class="display">
-            <small>DISC / TRACK</small>
-            <strong>01&nbsp;&nbsp;04:27</strong>
-            <div class="spectrum"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="stereo-wrap reveal delay-one" aria-label="Mini system retrô AuraCD">
+        <div class="stereo-shadow"></div>
+        <div class="stereo">
+          <div class="stereo-grille stereo-grille-top"></div>
+          <div class="stereo-header">
+            <div class="stereo-logo">AURA<span>CD</span></div>
+            <div class="model">REMOTE CONTROLLED<br><b>HI-FI COMPACT DISC SYSTEM</b><br>ACD-260</div>
+            <div class="power-zone"><span class="power-led"></span><small>POWER</small></div>
           </div>
-          <div class="tray">
-            <div class="disc"><div class="disc-label">AURA<br><b>CD</b></div></div>
-            <span>COMPACT DISC DIGITAL AUDIO</span>
+
+          <div class="stereo-main">
+            <div class="vfd-panel">
+              <div class="vfd-top"><span>COMPACT DISC</span><span>STEREO</span></div>
+              <div class="vfd-readout"><small>TRACK</small><strong id="demo-track">01</strong><b id="demo-time">00:00</b></div>
+              <div class="equalizer" aria-hidden="true">
+                <i style="--h:35%"></i><i style="--h:58%"></i><i style="--h:86%"></i><i style="--h:49%"></i><i style="--h:72%"></i><i style="--h:96%"></i><i style="--h:63%"></i><i style="--h:42%"></i><i style="--h:78%"></i><i style="--h:53%"></i><i style="--h:89%"></i><i style="--h:61%"></i>
+              </div>
+              <div class="vfd-status"><span>PLAY</span><span>1 DISC</span><span>MEMORY</span></div>
+            </div>
+
+            <div class="disc-bay">
+              <div class="tray-label">DIGITAL AUDIO / DISC TRAY</div>
+              <div class="tray-window">
+                <div class="tray-reflection"></div>
+                <div class="laser-line"></div>
+                <div class="disc-visual">
+                  <div class="disc-rainbow"></div>
+                  <div class="disc-print">AURA<br><b>CD</b><small>DIGITAL AUDIO</small></div>
+                  <div class="disc-hole"></div>
+                </div>
+              </div>
+              <div class="tray-meta"><span>32 BIT DIGITAL FILTER</span><span>COMPACT DISC DIGITAL AUDIO</span></div>
+            </div>
+
+            <div class="volume-module">
+              <div class="volume-caption"><span>VOLUME</span><small>MIN</small><small>MAX</small></div>
+              <div class="volume-knob" id="volume-knob" role="slider" tabindex="0" aria-label="Controle visual de volume" aria-valuemin="0" aria-valuemax="100" aria-valuenow="68">
+                <span></span>
+              </div>
+              <div class="volume-leds" id="volume-leds" aria-hidden="true"></div>
+            </div>
           </div>
-          <div class="knob"><span></span><small>VOLUME</small></div>
+
+          <div class="stereo-controls">
+            <button type="button" class="hardware-key" aria-label="Faixa anterior">◀◀<small>PREV</small></button>
+            <button type="button" class="hardware-key active-key" id="demo-play" aria-label="Reproduzir">▶<small>PLAY</small></button>
+            <button type="button" class="hardware-key" aria-label="Próxima faixa">▶▶<small>NEXT</small></button>
+            <button type="button" class="hardware-key" aria-label="Pausar">Ⅱ<small>PAUSE</small></button>
+            <a class="hardware-key download-key download-link" href="#" data-download="deck">⇩<small>DOWNLOAD</small></a>
+          </div>
+
+          <div class="stereo-footer">
+            <span>FULL LOGIC CONTROL</span>
+            <span class="footer-leds"><i></i><i></i><i></i><i></i><i></i></span>
+            <span>HIGH DENSITY LINEAR CONVERTER</span>
+          </div>
         </div>
-        <div class="deck-controls">
-          <button aria-label="Faixa anterior">◀◀</button><button class="play" aria-label="Reproduzir">▶</button><button aria-label="Próxima faixa">▶▶</button><button aria-label="Pausar">Ⅱ</button>
-          <div class="leds"><i></i><i></i><i></i><i></i><i></i></div>
-        </div>
       </div>
     </section>
 
-    <section class="showcase shell reveal">
-      <div class="section-heading">
-        <p class="eyebrow"><span></span> INTERFACE HI-FI</p>
-        <h2>Feito para ouvir, catalogar e redescobrir seus discos.</h2>
-      </div>
-      <div class="screen-frame">
-        <img src="assets/auracd-preview.png" alt="Interface Hi-Fi do AuraCD mostrando um álbum e o acervo pessoal" loading="lazy">
-      </div>
-    </section>
-
-    <section id="recursos" class="features shell">
-      <article class="feature reveal"><b>01</b><h3>Reprodução contínua</h3><p>Controle o leitor de CD, avance faixas, ajuste o volume e continue automaticamente para a próxima música.</p></article>
-      <article class="feature reveal delay-one"><b>02</b><h3>Identificação de álbuns</h3><p>Busca automática de capa, artista, ano e lista de faixas, com identificação assistida para edições raras.</p></article>
-      <article class="feature reveal delay-two"><b>03</b><h3>Acervo pessoal</h3><p>Monte uma galeria local de artistas, álbuns e estilos, acompanhando reproduções e tempo de audição.</p></article>
-      <article class="feature reveal"><b>04</b><h3>Privacidade local</h3><p>Seu histórico e seu acervo ficam no próprio computador. O AuraCD não exige conta para funcionar.</p></article>
-    </section>
-
-    <section id="instalacao" class="install shell reveal">
+    <section class="marquee-strip" aria-hidden="true">
       <div>
-        <p class="eyebrow"><span></span> INSTALAÇÃO SIMPLES</p>
-        <h2>Baixe, instale e abra pelo ícone da área de trabalho.</h2>
-        <p>O instalador é gráfico e o aplicativo executa em segundo plano sem abrir terminal ou janela preta. Ao final, o atalho do AuraCD é criado automaticamente na área de trabalho e no menu Iniciar.</p>
-        <a class="button download-link" href="#">Baixar o instalador</a>
+        <span>PLAY YOUR COLLECTION</span><i>◆</i><span>REDISCOVER YOUR ALBUMS</span><i>◆</i><span>BUILD YOUR PERSONAL ARCHIVE</span><i>◆</i>
+        <span>PLAY YOUR COLLECTION</span><i>◆</i><span>REDISCOVER YOUR ALBUMS</span><i>◆</i><span>BUILD YOUR PERSONAL ARCHIVE</span><i>◆</i>
       </div>
-      <ol>
-        <li><b>1</b><span><strong>Baixe</strong> o arquivo <code>AuraCD-Setup.exe</code>.</span></li>
-        <li><b>2</b><span><strong>Abra</strong> o instalador e avance pelas telas.</span></li>
-        <li><b>3</b><span><strong>Insira</strong> um CD de áudio e abra o AuraCD pelo novo ícone.</span></li>
-      </ol>
     </section>
 
-    <section id="requisitos" class="requirements shell reveal">
-      <div><p class="eyebrow"><span></span> COMPATIBILIDADE</p><h2>Requisitos do sistema</h2></div>
-      <ul>
-        <li>Windows 10 ou Windows 11 — 64 bits</li>
-        <li>Leitor de CD/DVD interno ou USB</li>
-        <li>Conexão com a internet para capas, letras e metadados</li>
-        <li>Não exige Python, VS Code ou instalação de bibliotecas</li>
-      </ul>
+    <section class="experience shell">
+      <div class="section-title reveal">
+        <span class="section-number">01</span>
+        <div><p>UMA EXPERIÊNCIA FEITA PARA O CD</p><h2>Não é streaming. É coleção.</h2></div>
+      </div>
+
+      <div class="experience-grid">
+        <article class="experience-card reveal">
+          <div class="feature-display"><span>DISC</span><b>01</b><i></i></div>
+          <h3>Insira e ouça</h3>
+          <p>Controle o leitor físico, reproduza faixas em sequência, ajuste o volume e mantenha o foco na experiência do álbum inteiro.</p>
+        </article>
+        <article class="experience-card reveal delay-one">
+          <div class="feature-display"><span>DATA</span><b>ID</b><i></i></div>
+          <h3>Identificação automática</h3>
+          <p>O AuraCD procura capa, artista, ano e lista de músicas. Edições raras também podem ser associadas manualmente.</p>
+        </article>
+        <article class="experience-card reveal delay-two">
+          <div class="feature-display"><span>MEMO</span><b>99</b><i></i></div>
+          <h3>Seu acervo pessoal</h3>
+          <p>Cada álbum ouvido entra em uma galeria local com estilos, histórico de reprodução e tempo de audição.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="product-showcase shell reveal">
+      <div class="showcase-copy">
+        <span class="section-number">02</span>
+        <p>INTERFACE HI-FI</p>
+        <h2>Um mini system dentro do Windows.</h2>
+        <p>Visual inspirado nos aparelhos de som dos anos 1980 e 1990, com displays, botões mecânicos, LEDs, animações e um acervo moderno por trás.</p>
+        <ul>
+          <li>Windows 10 e 11 — 64 bits</li>
+          <li>Leitor de CD/DVD interno ou USB</li>
+          <li>Atalho automático na área de trabalho</li>
+          <li>Execução silenciosa, sem terminal</li>
+        </ul>
+      </div>
+      <div class="screen-shell">
+        <div class="screen-top"><span>AURACD MONITOR</span><i></i><i></i><i></i></div>
+        <div class="screen-window"><img src="assets/auracd-preview.png" alt="Tela do AuraCD com player Hi-Fi e acervo pessoal" loading="lazy"></div>
+        <div class="screen-base"></div>
+      </div>
+    </section>
+
+    <section class="download-section shell reveal" id="download">
+      <div class="download-panel">
+        <div class="download-panel-lights" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="download-copy">
+          <p>PRONTO PARA GIRAR?</p>
+          <h2>Transforme seu PC no centro da sua coleção.</h2>
+          <span>Baixe o instalador, siga as telas e abra o AuraCD pelo ícone criado na área de trabalho.</span>
+        </div>
+        <div class="download-cta">
+          <a class="primary-download download-link" href="#" data-download="footer">
+            <span class="primary-download-icon">⇩</span>
+            <span class="primary-download-copy"><b>Baixar AuraCD</b><small id="footer-release-label">Windows 10/11 · 64 bits</small></span>
+          </a>
+          <p>Arquivo: <code>AuraCD-Setup.exe</code></p>
+        </div>
+      </div>
     </section>
   </main>
 
-  <footer class="shell">
-    <a class="brand brand-footer" href="#inicio"><span class="brand-mark"><i></i><i></i><i></i></span><span><b>Aura</b>CD</span></a>
-    <p>Player Hi-Fi para CDs e acervo pessoal.</p>
-    <a href="privacy.html">Privacidade</a>
+  <footer class="footer shell">
+    <a class="brand footer-brand" href="#inicio">
+      <span class="brand-emblem" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="brand-name">Aura<span>CD</span></span>
+    </a>
+    <p>Seu player de CDs e acervo pessoal para Windows.</p>
+    <div><a href="privacy.html">Privacidade</a><a href="https://github.com/ricardobmuller/AuraCD" target="_blank" rel="noopener">GitHub ↗</a></div>
   </footer>
 
   <script src="app.js"></script>
