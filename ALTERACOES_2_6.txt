@@ -1,4 +1,4 @@
-AURACD 2.6 - DISTRIBUICAO
+AURACD 2.7 - DISTRIBUICAO
 
 - Site completo pronto para GitHub Pages na pasta docs.
 - Workflow para publicar o site automaticamente.

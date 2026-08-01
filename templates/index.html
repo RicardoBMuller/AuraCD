@@ -7,7 +7,7 @@
   <meta name="description" content="AuraCD — central Hi‑Fi retrô para CDs de áudio.">
   <title>AuraCD Hi‑Fi Collection</title>
   <link rel="icon" href="/static/img/icon-192.png">
-  <link rel="stylesheet" href="/static/css/style.css?v=2.6.0">
+  <link rel="stylesheet" href="/static/css/style.css?v=2.7.0">
 </head>
 <body>
   <div class="room-glow" aria-hidden="true"></div>
@@ -20,13 +20,20 @@
     </button>
     <div class="brand" aria-label="AuraCD">
       <span class="brand-main"><span class="brand-aura">AURA</span><span class="brand-cd">CD</span></span>
-      <small>REMOTE CONTROLLED COMPACT DISC SYSTEM</small>
+      <small>HIGH FIDELITY MICRO SYSTEM · DIGITAL AUDIO DECK</small>
     </div>
     <div class="top-actions">
-      <span class="app-badge"><i></i> LOCAL LINK</span>
+      <span class="app-badge"><i></i> SYSTEM ONLINE</span>
       <button class="settings-button" id="settingsButton" type="button">SETUP</button>
     </div>
   </header>
+
+  <aside class="speaker-stack speaker-stack-left" aria-hidden="true">
+    <div class="speaker-brand">AuraCD</div><div class="speaker-driver woofer"></div><div class="speaker-driver mid"></div><div class="speaker-driver tweeter"></div><div class="speaker-port"></div>
+  </aside>
+  <aside class="speaker-stack speaker-stack-right" aria-hidden="true">
+    <div class="speaker-brand">AuraCD</div><div class="speaker-driver woofer"></div><div class="speaker-driver mid"></div><div class="speaker-driver tweeter"></div><div class="speaker-port"></div>
+  </aside>
 
   <main class="app-layout">
     <section class="player-column">
@@ -37,7 +44,12 @@
         <i class="rack-screw screw-br" aria-hidden="true"></i>
 
         <div class="model-strip">
-          <div class="model-copy"><strong>AuraCD</strong><span>CDP‑2400 DIGITAL AUDIO</span></div>
+          <div class="model-copy"><strong>AuraCD</strong><span>MS‑2700 MICRO COMPONENT SYSTEM</span></div>
+          <div class="system-indicators" aria-label="Recursos ativos">
+            <span class="system-indicator power"><i></i>POWER</span>
+            <span class="system-indicator auto" id="autoAdvanceLed"><i></i>AUTO NEXT</span>
+            <span class="system-indicator"><i></i>PCM</span>
+          </div>
           <div class="format-marks"><span>COMPACT</span><b>disc</b><span>DIGITAL AUDIO</span></div>
         </div>
 
@@ -55,7 +67,7 @@
 
         <div class="display-deck">
           <div class="disc-stage">
-            <div class="tray-label">MOTORIZED DISC TRAY</div>
+            <div class="tray-label">MOTORIZED DISC TRAY · 1 BIT D/A CONVERTER</div>
             <div class="disc-shell" id="discShell">
               <img id="coverImage" src="/static/img/disc-placeholder.svg" alt="Capa do álbum">
               <div class="disc-shine"></div>
@@ -83,6 +95,7 @@
               <div class="vu-meter"><span class="vu-label">R</span><i class="vu-needle"></i><b>−20&nbsp;&nbsp;−10&nbsp;&nbsp;0&nbsp;&nbsp;+3</b></div>
               <div class="power-lamp"><span></span><small>STEREO</small></div>
             </section>
+            <div class="sound-signature"><span>SUPER BASS</span><i></i><span>DIGITAL SERVO</span><i></i><span>AUTO SEQUENCE</span></div>
           </div>
         </div>
 
@@ -118,7 +131,7 @@
       <i class="rack-screw screw-br" aria-hidden="true"></i>
 
       <div class="panel-model-strip">
-        <div><strong>PROGRAM INFORMATION PROCESSOR</strong><span>REMOTE TEXT / COLLECTION TERMINAL</span></div>
+        <div><strong>AuraCD MUSIC INFORMATION DECK</strong><span>TRACK DATABASE / LYRICS / PERSONAL COLLECTION</span></div>
         <span class="memory-led"><i></i> MEMORY</span>
       </div>
 
@@ -239,6 +252,6 @@
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="/static/js/app.js?v=2.6.0" defer></script>
+  <script src="/static/js/app.js?v=2.7.0" defer></script>
 </body>
 </html>

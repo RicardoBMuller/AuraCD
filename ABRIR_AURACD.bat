@@ -10,7 +10,7 @@ if not exist ".venv\Scripts\python.exe" (
 )
 
 echo ==========================================================
-echo   AuraCD 2.6
+echo   AuraCD 2.7
 ECHO ==========================================================
 echo.
 echo O navegador sera aberto automaticamente.

@@ -17,12 +17,12 @@ VSVersionInfo(
         [
           StringStruct('CompanyName', 'AuraCD'),
           StringStruct('FileDescription', 'AuraCD — Player Hi-Fi para CDs'),
-          StringStruct('FileVersion', '2.6.0'),
+          StringStruct('FileVersion', '2.7.0'),
           StringStruct('InternalName', 'AuraCD'),
           StringStruct('LegalCopyright', 'Copyright © 2026 AuraCD'),
           StringStruct('OriginalFilename', 'AuraCD.exe'),
           StringStruct('ProductName', 'AuraCD'),
-          StringStruct('ProductVersion', '2.6.0')
+          StringStruct('ProductVersion', '2.7.0')
         ]
       )
     ]),

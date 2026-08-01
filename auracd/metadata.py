@@ -336,7 +336,7 @@ class MetadataService:
         local, domain = contact.split("@", 1)
         local = re.sub(r"[^A-Za-z0-9._-]", "", local) or "auracd"
         domain = re.sub(r"[^A-Za-z0-9.-]", "", domain) or "example.com"
-        hello = f"{local} {domain} AuraCD 2.6"
+        hello = f"{local} {domain} AuraCD 2.7"
         response = self.session.get(
             "https://gnudb.gnudb.org/~cddb/cddb.cgi",
             params={"cmd": command, "hello": hello, "proto": 6},

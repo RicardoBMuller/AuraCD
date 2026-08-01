@@ -1,0 +1,22 @@
+AURACD 2.7 - AUTO NEXT + MICRO SYSTEM DECK
+
+PRINCIPAIS ALTERACOES
+
+1. Correcao do avanco automatico
+- Corrigido o relogio interno que era reiniciado durante a reproducao.
+- A proxima faixa agora inicia automaticamente ao terminar a atual.
+- A deteccao usa a duracao real do TOC do CD, a ultima posicao valida e um relogio monotonic.
+- Adicionada tolerancia para leitores que retornam STOP, posicao zero ou duracao zero no final.
+- Adicionada protecao contra avanco duplicado e contra comandos manuais simultaneos.
+
+2. Visual AuraCD Micro System
+- Nova assinatura visual MS-2700.
+- Indicadores POWER, AUTO NEXT e PCM.
+- Torres de caixas acusticas decorativas em telas grandes.
+- Painel frontal, transport deck, LCD, VU meters e acabamento metalico aprimorados.
+- Indicador AUTO NEXT mostra quando o recurso esta ativo.
+
+3. Compatibilidade
+- Mantido o funcionamento local em Windows com o leitor fisico de CD/DVD.
+- Mantidas identificacao de albuns, letras, biografia, acervo e estatisticas.
+- Layout responsivo continua funcionando em notebooks e telas menores.

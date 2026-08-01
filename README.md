@@ -1,4 +1,4 @@
-# AuraCD 2.6 — distribuição para Windows e GitHub Pages
+# AuraCD 2.7 — distribuição para Windows e GitHub Pages
 
 Player Hi‑Fi retrô para CDs de áudio, com identificação de discos, letras, informações do artista, reprodução contínua e acervo pessoal persistente.
 
@@ -20,7 +20,7 @@ Player Hi‑Fi retrô para CDs de áudio, com identificação de discos, letras,
 ## Estrutura de distribuição
 
 ```text
-AuraCD_2_6_DISTRIBUICAO/
+AuraCD_2_7_DISTRIBUICAO/
 ├── .github/workflows/
 │   ├── pages.yml                 # publica o site
 │   └── release-windows.yml       # gera e publica o instalador

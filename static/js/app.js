@@ -14,6 +14,7 @@ const ui = {
   musicbrainzContact: $('#musicbrainzContact'), autoLyricsToggle: $('#autoLyricsToggle'), saveSettingsButton: $('#saveSettingsButton'), clearCacheButton: $('#clearCacheButton'), clearCollectionButton: $('#clearCollectionButton'),
   collectionGallery: $('#collectionGallery'), collectionSearch: $('#collectionSearch'), collectionSort: $('#collectionSort'), collectionCount: $('#collectionCount'), collectionUpdated: $('#collectionUpdated'), statAlbums: $('#statAlbums'), statArtists: $('#statArtists'), statPlays: $('#statPlays'), statTime: $('#statTime'), favoriteGenre: $('#favoriteGenre'), genreBars: $('#genreBars'), topArtists: $('#topArtists'),
   toast: $('#toast'), playerCard: $('.player-card'), vuDeck: $('#vuDeck'),
+  autoAdvanceLed: $('#autoAdvanceLed'),
 };
 
 const state = {
@@ -235,6 +236,7 @@ async function refreshPlayerStatus() {
 
     if (typeof status.shuffle === 'boolean') state.shuffle = status.shuffle;
     if (status.repeat) state.repeat = status.repeat;
+    ui.autoAdvanceLed?.classList.toggle('active', status.auto_advance === true);
     ui.shuffleButton.classList.toggle('active', state.shuffle);
     ui.repeatButton.classList.toggle('active', state.repeat !== 'off');
     ui.repeatLabel.textContent = state.repeat === 'one' ? 'REP 1' : 'REP';

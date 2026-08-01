@@ -19,12 +19,12 @@ https://github.com/ricardobmuller/AuraCD
 
 ## 2. Enviar o projeto pelo VS Code
 
-Extraia o ZIP, abra a pasta `AuraCD_2_6_DISTRIBUICAO` no VS Code e execute no terminal:
+Extraia o ZIP, abra a pasta `AuraCD_2_7_DISTRIBUICAO` no VS Code e execute no terminal:
 
 ```powershell
 git init
 git add .
-git commit -m "Publica AuraCD 2.6"
+git commit -m "Publica AuraCD 2.7"
 git branch -M main
 git remote add origin https://github.com/ricardobmuller/AuraCD.git
 git push -u origin main
@@ -60,7 +60,7 @@ O site está na pasta `docs`. Ele identifica automaticamente o usuário e o nome
 1. Abra a aba **Actions**.
 2. Selecione **Gerar instalador Windows**.
 3. Clique em **Run workflow**.
-4. Informe a versão, por exemplo `2.6.0`.
+4. Informe a versão, por exemplo `2.7.0`.
 5. Clique no botão verde **Run workflow**.
 6. Aguarde o workflow terminar com o indicador verde.
 
@@ -71,7 +71,7 @@ O GitHub fará automaticamente:
 - empacotamento com PyInstaller em modo `windowed/noconsole`;
 - criação do instalador gráfico com Inno Setup;
 - geração do checksum SHA‑256;
-- criação da Release `v2.6.0`;
+- criação da Release `v2.7.0`;
 - upload de `AuraCD-Setup.exe`.
 
 ## 5. Testar o download
@@ -108,7 +108,7 @@ git commit -m "Atualiza o AuraCD"
 git push
 ```
 
-3. Na aba **Actions**, execute novamente **Gerar instalador Windows** com uma versão maior, como `2.6.1`.
+3. Na aba **Actions**, execute novamente **Gerar instalador Windows** com uma versão maior, como `2.7.1`.
 4. O botão do site passará a baixar automaticamente a Release mais recente.
 
 ## Observação sobre o aviso do Windows
