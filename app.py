@@ -21,11 +21,10 @@ from werkzeug.serving import BaseWSGIServer, make_server
 from auracd.collection import CollectionStore
 from auracd.demo_player import DemoCDPlayer
 from auracd.metadata import MetadataService
-from auracd.playback import should_auto_advance
 from auracd.settings import SettingsStore
 
 
-APP_VERSION = "2.7.0"
+APP_VERSION = "2.6.0"
 FROZEN = bool(getattr(sys, "frozen", False))
 BUNDLE_DIR = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
 PROJECT_DIR = Path(sys.executable).resolve().parent if FROZEN else Path(__file__).resolve().parent
@@ -93,7 +92,7 @@ def acquire_single_instance() -> bool:
 
         kernel32 = ctypes.windll.kernel32
         kernel32.CreateMutexW.restype = ctypes.c_void_p
-        handle = kernel32.CreateMutexW(None, False, "Local\\AuraCD_Player_2_7")
+        handle = kernel32.CreateMutexW(None, False, "Local\\AuraCD_Player_2_6")
         if not handle:
             return True
 
@@ -166,8 +165,6 @@ playback_state: dict[str, Any] = {
     "last_position": 0.0,
     "last_duration": 0.0,
     "started_at": 0.0,
-    "started_offset": 0.0,
-    "stopped_samples": 0,
     "generation": 0,
 }
 
@@ -177,7 +174,7 @@ def playback_snapshot() -> dict[str, Any]:
         return deepcopy(playback_state)
 
 
-def playback_mark_started(track: int, offset: float = 0.0, duration: float = 0.0) -> None:
+def playback_mark_started(track: int) -> None:
     with playback_lock:
         playback_state.update(
             {
@@ -185,11 +182,9 @@ def playback_mark_started(track: int, offset: float = 0.0, duration: float = 0.0
                 "paused": False,
                 "track": int(track),
                 "last_mode": "starting",
-                "last_position": max(0.0, float(offset)),
-                "last_duration": max(0.0, float(duration)),
+                "last_position": 0.0,
+                "last_duration": 0.0,
                 "started_at": time.monotonic(),
-                "started_offset": max(0.0, float(offset)),
-                "stopped_samples": 0,
                 "generation": int(playback_state.get("generation", 0)) + 1,
             }
         )
@@ -203,13 +198,10 @@ def playback_mark_paused() -> None:
 
 def playback_mark_resumed() -> None:
     with playback_lock:
-        resume_position = max(0.0, float(playback_state.get("last_position") or 0.0))
         playback_state["active"] = True
         playback_state["paused"] = False
         playback_state["last_mode"] = "starting"
         playback_state["started_at"] = time.monotonic()
-        playback_state["started_offset"] = resume_position
-        playback_state["stopped_samples"] = 0
         playback_state["generation"] = int(playback_state.get("generation", 0)) + 1
 
 
@@ -220,8 +212,6 @@ def playback_mark_stopped() -> None:
         playback_state["last_mode"] = "stopped"
         playback_state["last_position"] = 0.0
         playback_state["last_duration"] = 0.0
-        playback_state["started_offset"] = 0.0
-        playback_state["stopped_samples"] = 0
         playback_state["generation"] = int(playback_state.get("generation", 0)) + 1
 
 
@@ -247,13 +237,11 @@ def playback_next_track(current_track: int, track_count: int) -> int | None:
 
 
 def monitor_playback() -> None:
-    """Monitora a reprodução e avança para a faixa seguinte com segurança.
+    """Detecta o fim da faixa e inicia a próxima no próprio backend.
 
-    O MCI varia bastante entre modelos de leitor: alguns zeram posição e
-    duração ao terminar, outros informam ``stopped`` por alguns ciclos e há
-    unidades que já mudam o número da faixa. A decisão abaixo combina o TOC do
-    disco, a última posição válida e um relógio monotônico. Assim o avanço não
-    depende de um único retorno do driver nem da aba do navegador estar ativa.
+    Alguns drivers ópticos retornam ``stopped`` apenas por uma fração de
+    segundo e outros zeram a posição no exato final. Por isso guardamos a
+    última posição válida e usamos uma pequena janela de tolerância.
     """
 
     stats_last_tick = time.monotonic()
@@ -265,25 +253,23 @@ def monitor_playback() -> None:
         try:
             status = player.status()
             mode = str(status.get("mode") or "stopped").lower()
-            observed_track = max(1, int(status.get("track") or 1))
+            observed_track = int(status.get("track") or 1)
             position = max(0.0, float(status.get("position") or 0.0))
             duration = max(0.0, float(status.get("duration") or 0.0))
             now = time.monotonic()
-            disc = snapshot().get("disc") or {}
-            tracks = disc.get("tracks") or []
-            track_count = int(disc.get("track_count") or len(tracks))
 
             # Soma o tempo realmente reproduzido ao acervo. A gravação ocorre
             # em blocos para não acessar o disco a cada consulta do driver.
             elapsed_for_stats = max(0.0, min(now - stats_last_tick, 1.5))
             stats_last_tick = now
-            if mode == "playing" and disc.get("identified"):
-                current_key = (disc.get("disc_id"), observed_track)
+            current_disc_for_stats = snapshot().get("disc") or {}
+            if mode == "playing" and current_disc_for_stats.get("identified"):
+                current_key = (current_disc_for_stats.get("disc_id"), observed_track)
                 previous_key = ((stats_disc or {}).get("disc_id"), stats_track)
                 if stats_buffer > 0 and stats_disc and current_key != previous_key:
                     collection_store.add_listening_time(stats_disc, stats_track, stats_buffer)
                     stats_buffer = 0.0
-                stats_disc = disc
+                stats_disc = current_disc_for_stats
                 stats_track = observed_track
                 stats_buffer += elapsed_for_stats
                 if stats_buffer >= 8.0:
@@ -293,101 +279,86 @@ def monitor_playback() -> None:
                 collection_store.add_listening_time(stats_disc, stats_track, stats_buffer)
                 stats_buffer = 0.0
 
-            next_track: int | None = None
-            generation = 0
-            should_advance = False
-
             with playback_lock:
                 active = bool(playback_state.get("active"))
                 paused = bool(playback_state.get("paused"))
-                expected_track = max(1, int(playback_state.get("track") or observed_track))
+                expected_track = int(playback_state.get("track") or observed_track)
                 last_mode = str(playback_state.get("last_mode") or "stopped")
-                last_position = max(0.0, float(playback_state.get("last_position") or 0.0))
-                last_duration = max(0.0, float(playback_state.get("last_duration") or 0.0))
-                started_at = max(0.0, float(playback_state.get("started_at") or 0.0))
-                started_offset = max(0.0, float(playback_state.get("started_offset") or 0.0))
-                stopped_samples = max(0, int(playback_state.get("stopped_samples") or 0))
+                last_position = float(playback_state.get("last_position") or 0.0)
+                last_duration = float(playback_state.get("last_duration") or 0.0)
+                started_at = float(playback_state.get("started_at") or 0.0)
                 generation = int(playback_state.get("generation") or 0)
 
-                # Alguns leitores seguem para a faixa seguinte sozinhos. Nesse
-                # caso sincronizamos o backend e reiniciamos somente o relógio
-                # da nova faixa, sem emitir outro PLAY por cima da reprodução.
+                # Alguns leitores continuam para a próxima faixa sozinhos.
+                # Nesse caso apenas sincronizamos o estado, sem disparar outro
+                # comando PLAY sobre uma música que já está tocando.
                 if active and mode == "playing" and observed_track != expected_track:
-                    known_duration = 0.0
-                    if 1 <= observed_track <= len(tracks):
-                        known_duration = max(0.0, float(tracks[observed_track - 1].get("duration") or 0.0))
-                    playback_state.update(
-                        {
-                            "track": observed_track,
-                            "last_position": position,
-                            "last_duration": duration or known_duration,
-                            "last_mode": "playing",
-                            "started_at": now,
-                            "started_offset": position,
-                            "stopped_samples": 0,
-                        }
-                    )
-                elif mode == "playing":
-                    # Importante: started_at NÃO deve ser atualizado a cada
-                    # consulta. A versão anterior fazia isso e o monitor nunca
-                    # alcançava o tempo mínimo necessário para reconhecer o fim.
-                    playback_state["active"] = True
-                    playback_state["paused"] = False
                     playback_state["track"] = observed_track
+                    playback_state["last_position"] = position
+                    playback_state["last_duration"] = duration
                     playback_state["last_mode"] = "playing"
-                    playback_state["last_position"] = max(last_position, position)
-                    playback_state["stopped_samples"] = 0
-                    if duration > 0:
-                        playback_state["last_duration"] = duration
-                elif mode == "paused" or paused:
+                    playback_state["started_at"] = now
+                    continue
+
+                if mode == "paused" or paused:
                     playback_state["paused"] = True
                     playback_state["last_mode"] = "paused"
-                    playback_state["stopped_samples"] = 0
                     if position > 0:
                         playback_state["last_position"] = position
                     if duration > 0:
                         playback_state["last_duration"] = duration
-                elif not active:
+                    continue
+
+                if not active:
                     playback_state["last_mode"] = mode
-                    playback_state["stopped_samples"] = 0
-                else:
-                    stopped_samples += 1
-                    playback_state["stopped_samples"] = stopped_samples
+                    if mode == "playing":
+                        playback_state["last_position"] = position
+                        if duration > 0:
+                            playback_state["last_duration"] = duration
+                    continue
 
-                    known_duration = 0.0
-                    if 1 <= expected_track <= len(tracks):
-                        known_duration = max(0.0, float(tracks[expected_track - 1].get("duration") or 0.0))
-                    should_advance = should_auto_advance(
-                        now=now,
-                        started_at=started_at,
-                        started_offset=started_offset,
-                        position=position,
-                        last_position=last_position,
-                        duration=duration,
-                        last_duration=last_duration,
-                        known_duration=known_duration,
-                        stopped_samples=stopped_samples,
-                    )
+                effective_duration = duration or last_duration
+                effective_position = max(position, last_position)
+                # IMPORTANTE: alguns drivers (inclusive alguns leitores MCI
+                # reais e o player de demonstração) nunca trocam o modo para
+                # "stopped" no fim da faixa — a posição chega ao fim e o
+                # modo continua "playing" indefinidamente. Por isso a
+                # detecção por proximidade do fim (near_end) precisa valer
+                # mesmo com mode ainda "playing"; usamos uma margem mais
+                # apertada nesse caso para não cortar o áudio antes da hora.
+                near_end_margin = 1.8 if mode != "playing" else 0.6
+                near_end = effective_duration > 0 and effective_position >= max(0.0, effective_duration - near_end_margin)
+                played_long_enough = (now - started_at) >= 1.2
+                transitioned_from_playing = last_mode == "playing" and mode in {"stopped", "stop", "not ready"}
+                ended = played_long_enough and (near_end or transitioned_from_playing)
 
-                    if should_advance:
-                        next_track = playback_next_track(expected_track, track_count)
-                        playback_state["active"] = False
-                        playback_state["paused"] = False
-                        playback_state["last_mode"] = "advancing"
-                    elif stopped_samples == 1 and last_mode == "playing":
-                        # Mantém a memória de que estávamos tocando durante um
-                        # STOP isolado do driver; isso evita falsos negativos.
-                        playback_state["last_mode"] = "playing"
-                    else:
-                        playback_state["last_mode"] = mode
+                if mode == "playing":
+                    playback_state["active"] = True
+                    playback_state["paused"] = False
+                    playback_state["track"] = observed_track
+                    playback_state["last_mode"] = "playing"
+                    playback_state["last_position"] = position
+                    if duration > 0:
+                        playback_state["last_duration"] = duration
+                    if not ended:
+                        continue
+                elif not ended:
+                    # Ignora estados transitórios de STOP logo após um PLAY.
+                    playback_state["last_mode"] = mode
+                    continue
 
-            if not should_advance:
-                shutdown_event.wait(0.28)
-                continue
+                disc = snapshot().get("disc") or {}
+                track_count = int(disc.get("track_count") or len(disc.get("tracks") or []))
+                finished_track = expected_track
+                next_track = playback_next_track(finished_track, track_count)
+
+                # Desarma antes de sair do lock. Se outro comando do usuário
+                # ocorrer, a geração muda e esta troca automática é descartada.
+                playback_state["active"] = False
+                playback_state["last_mode"] = "advancing"
 
             if next_track is None:
                 playback_mark_stopped()
-                shutdown_event.wait(0.28)
                 continue
 
             try:
@@ -398,16 +369,12 @@ def monitor_playback() -> None:
             except Exception as exc:
                 logger.warning("Não foi possível iniciar automaticamente a faixa %s: %s", next_track, exc)
                 playback_mark_stopped()
-                shutdown_event.wait(0.28)
                 continue
 
             with playback_lock:
                 # Só confirma a troca se nenhum comando manual ocorreu durante
                 # o pequeno intervalo entre a detecção e o PLAY.
                 if int(playback_state.get("generation") or 0) == generation:
-                    next_duration = 0.0
-                    if 1 <= next_track <= len(tracks):
-                        next_duration = max(0.0, float(tracks[next_track - 1].get("duration") or 0.0))
                     playback_state.update(
                         {
                             "active": True,
@@ -415,14 +382,11 @@ def monitor_playback() -> None:
                             "track": next_track,
                             "last_mode": "starting",
                             "last_position": 0.0,
-                            "last_duration": next_duration,
+                            "last_duration": 0.0,
                             "started_at": time.monotonic(),
-                            "started_offset": 0.0,
-                            "stopped_samples": 0,
                             "generation": generation + 1,
                         }
                     )
-                    logger.info("Avanço automático: faixa %s iniciada.", next_track)
         except Exception as exc:
             logger.debug("Monitor de reprodução: %s", exc)
 
@@ -452,6 +416,7 @@ def basic_disc_from_toc(toc: dict[str, Any]) -> dict[str, Any]:
         "album": "Lendo o CD…",
         "artist": "Buscando informações…",
         "cover_url": "/static/img/disc-placeholder.svg",
+        "booklet_images": [],
         "year": "",
         "country": "",
         "metadata_ready": False,
@@ -802,7 +767,7 @@ def api_player_status():
 
 @app.post("/api/player/play")
 def api_player_play():
-    disc, error = current_disc_or_error()
+    _disc, error = current_disc_or_error()
     if error:
         return error
     body = request.get_json(silent=True) or {}
@@ -810,11 +775,7 @@ def api_player_play():
         track = int(body.get("track") or 1)
         offset = float(body.get("offset") or 0)
         player.play_track(track, offset)
-        tracks = (disc or {}).get("tracks") or []
-        track_duration = 0.0
-        if 1 <= track <= len(tracks):
-            track_duration = float(tracks[track - 1].get("duration") or 0.0)
-        playback_mark_started(track, offset, track_duration)
+        playback_mark_started(track)
         disc = snapshot().get("disc") or {}
         if disc.get("identified"):
             collection_store.record_play(disc, track)
@@ -869,12 +830,7 @@ def api_player_seek():
         seconds = float(body.get("seconds") or 0)
         player.seek(seconds)
         current = int(player.status().get("track") or playback_snapshot().get("track") or 1)
-        disc = snapshot().get("disc") or {}
-        tracks = disc.get("tracks") or []
-        track_duration = 0.0
-        if 1 <= current <= len(tracks):
-            track_duration = float(tracks[current - 1].get("duration") or 0.0)
-        playback_mark_started(current, seconds, track_duration)
+        playback_mark_started(current)
         return jsonify({"ok": True})
     except Exception as exc:
         return jsonify({"ok": False, "error": str(exc)}), 400

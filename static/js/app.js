@@ -14,13 +14,14 @@ const ui = {
   musicbrainzContact: $('#musicbrainzContact'), autoLyricsToggle: $('#autoLyricsToggle'), saveSettingsButton: $('#saveSettingsButton'), clearCacheButton: $('#clearCacheButton'), clearCollectionButton: $('#clearCollectionButton'),
   collectionGallery: $('#collectionGallery'), collectionSearch: $('#collectionSearch'), collectionSort: $('#collectionSort'), collectionCount: $('#collectionCount'), collectionUpdated: $('#collectionUpdated'), statAlbums: $('#statAlbums'), statArtists: $('#statArtists'), statPlays: $('#statPlays'), statTime: $('#statTime'), favoriteGenre: $('#favoriteGenre'), genreBars: $('#genreBars'), topArtists: $('#topArtists'),
   toast: $('#toast'), playerCard: $('.player-card'), vuDeck: $('#vuDeck'),
-  autoAdvanceLed: $('#autoAdvanceLed'),
+  bookletTrigger: $('#bookletTrigger'), bookletTriggerCover: $('#bookletTriggerCover'), bookletTriggerAlbum: $('#bookletTriggerAlbum'), bookletTriggerArtist: $('#bookletTriggerArtist'),
+  bookletModal: $('#bookletModal'), bookletPages: $('#bookletPages'), bookletPrev: $('#bookletPrev'), bookletNext: $('#bookletNext'), bookletDots: $('#bookletDots'),
 };
 
 const state = {
   disc: null, server: null, player: { mode: 'stopped', track: 1, position: 0, duration: 0 },
   currentTrack: 1, revision: -1, shuffle: false, repeat: 'off', seeking: false,
-  lyricLines: [],
+  lyricLines: [], bookletPage: 0, bookletPageCount: 1,
   settings: { auto_lyrics: true, default_volume: 80 },
   collection: { albums: [], summary: {}, genres: [], top_artists: [] },
 };
@@ -137,6 +138,11 @@ function renderDisc(disc) {
     ui.identifyBanner.classList.remove('visible');
     renderArtist(null);
     renderLyricsEmpty('A letra aparecerá aqui quando uma faixa identificada for selecionada.');
+    ui.bookletTriggerCover.src = '/static/img/disc-placeholder.svg';
+    ui.bookletTriggerAlbum.textContent = 'Nenhum CD';
+    ui.bookletTriggerArtist.textContent = 'Insira um CD de áudio';
+    ui.bookletTrigger.style.removeProperty('--trigger-bg');
+    if (ui.bookletModal.classList.contains('open')) closeModal(ui.bookletModal);
     return;
   }
 
@@ -147,6 +153,11 @@ function renderDisc(disc) {
   const needsManual = Boolean(disc.metadata_ready && !disc.identified && disc.needs_manual_search);
   ui.identifyBanner.classList.toggle('visible', needsManual);
   ui.identifyDiagnostic.textContent = needsManual ? (disc.diagnostic || `Leitura: ${disc.reader || 'MCI'} · Disc ID: ${disc.disc_id || 'indisponível'}`) : '';
+  const coverUrl = disc.cover_url || '/static/img/disc-placeholder.svg';
+  ui.bookletTriggerCover.src = coverUrl;
+  ui.bookletTriggerAlbum.textContent = disc.album || 'CD de áudio';
+  ui.bookletTriggerArtist.textContent = disc.artist || 'Artista desconhecido';
+  ui.bookletTrigger.style.setProperty('--trigger-bg', `url("${coverUrl}")`);
   renderTrackList();
   renderNowPlaying();
   renderArtist(disc.artist_details || null);
@@ -162,6 +173,11 @@ function renderNowPlaying() {
   ui.lyricsTitle.textContent = track.title || `Faixa ${state.currentTrack}`;
   $$('.track-item').forEach((item) => item.classList.toggle('active', Number(item.dataset.track) === state.currentTrack));
   animateTrackChange();
+  if (ui.bookletModal.classList.contains('open')) {
+    const keepPage = state.bookletPage;
+    renderBooklet();
+    setBookletPage(keepPage, false);
+  }
 }
 
 function renderTrackList() {
@@ -174,6 +190,150 @@ function renderTrackList() {
       <span class="track-led" aria-hidden="true"></span>
     </button>`).join('');
   $$('.track-item').forEach((button) => button.addEventListener('click', () => playTrack(Number(button.dataset.track))));
+}
+
+function bookletCoverPageHtml(disc) {
+  const coverUrl = disc.cover_url || '/static/img/disc-placeholder.svg';
+  return `
+    <article class="booklet-page">
+      <div class="booklet-cover">
+        <img src="${coverUrl}" alt="Capa do álbum" onerror="this.src='/static/img/disc-placeholder.svg'">
+        <div class="booklet-cover-scrim"></div>
+        <div class="booklet-cover-copy">
+          <span>${escapeHtml(disc.year || '—')}</span>
+          <h3>${escapeHtml(disc.album || 'CD de áudio')}</h3>
+          <p>${escapeHtml(disc.artist || 'Artista desconhecido')}</p>
+        </div>
+      </div>
+    </article>`;
+}
+
+function bookletScanPageHtml(image, index, total) {
+  return `
+    <article class="booklet-page">
+      <div class="booklet-scan">
+        <img src="${image.url}" alt="Página ${index} do encarte oficial" loading="lazy" onerror="this.onerror=null; this.src='/static/img/disc-placeholder.svg'; this.closest('.booklet-scan').classList.add('broken');">
+        <span class="booklet-scan-tag">ENCARTE OFICIAL · ${index}/${total}</span>
+      </div>
+    </article>`;
+}
+
+function bookletTracksPageHtml(disc) {
+  const rows = (disc.tracks || []).map((item) => `
+    <button class="booklet-track-row ${item.number === state.currentTrack ? 'active' : ''}" type="button" data-track="${item.number}">
+      <span class="n">${String(item.number).padStart(2, '0')}</span>
+      <span class="t">${escapeHtml(item.title || `Faixa ${item.number}`)}</span>
+      <span class="d">${formatTime(item.duration)}</span>
+    </button>`).join('') || '<p class="muted">Nenhuma faixa disponível.</p>';
+  return `
+    <article class="booklet-page">
+      <div class="booklet-panel">
+        <span class="booklet-kicker">FAIXAS</span>
+        <div class="booklet-tracklist">${rows}</div>
+      </div>
+    </article>`;
+}
+
+function bookletInfoPageHtml(disc) {
+  const tags = disc.artist_details?.tags || [];
+  return `
+    <article class="booklet-page">
+      <div class="booklet-panel">
+        <span class="booklet-kicker">SOBRE O ÁLBUM</span>
+        <div class="booklet-info">
+          <div class="booklet-info-row"><small>Artista</small><strong>${escapeHtml(disc.artist || 'Artista desconhecido')}</strong></div>
+          <div class="booklet-info-row"><small>Álbum</small><strong>${escapeHtml(disc.album || 'CD de áudio')}</strong></div>
+          <div class="booklet-info-row"><small>Ano</small><strong>${escapeHtml(disc.year || '—')}</strong></div>
+          <div class="booklet-info-row"><small>Faixas</small><strong>${disc.tracks?.length || 0}</strong></div>
+        </div>
+        <div class="booklet-tags">${tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join('')}</div>
+        <p class="booklet-bio">${escapeHtml(disc.artist_details?.biography || 'As informações do artista aparecerão aqui após a identificação do CD.')}</p>
+      </div>
+    </article>`;
+}
+
+function bookletNowPageHtml(disc) {
+  const track = currentTrackData();
+  return `
+    <article class="booklet-page">
+      <div class="booklet-panel booklet-now">
+        <span class="booklet-kicker">TOCANDO NO AURACD</span>
+        <div class="booklet-now-track">${escapeHtml(track?.title || `Faixa ${state.currentTrack}`)}</div>
+        <div class="booklet-now-meta">${escapeHtml(track?.artist || disc.artist || 'Artista desconhecido')} · Faixa ${String(state.currentTrack).padStart(2, '0')}</div>
+        <div class="booklet-now-eq" id="bookletNowEq" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+      </div>
+    </article>`;
+}
+
+function renderBooklet() {
+  const disc = state.disc;
+  if (!disc) return;
+  const scans = disc.booklet_images || [];
+
+  const pages = [bookletCoverPageHtml(disc)];
+  scans.forEach((image, index) => pages.push(bookletScanPageHtml(image, index + 1, scans.length)));
+  pages.push(bookletTracksPageHtml(disc));
+  pages.push(bookletInfoPageHtml(disc));
+  pages.push(bookletNowPageHtml(disc));
+
+  ui.bookletPages.innerHTML = pages.join('');
+  ui.bookletDots.innerHTML = pages.map((_, index) => `<button class="booklet-dot" data-page="${index}" type="button" aria-label="Página ${index + 1} de ${pages.length}"></button>`).join('');
+  state.bookletPageCount = pages.length;
+
+  $$('.booklet-track-row').forEach((button) => button.addEventListener('click', () => playTrack(Number(button.dataset.track))));
+  $$('.booklet-dot').forEach((dot) => dot.addEventListener('click', () => setBookletPage(Number(dot.dataset.page))));
+  $('#bookletNowEq')?.classList.toggle('playing', state.player.mode === 'playing');
+}
+
+function setBookletPage(index, animate = true) {
+  const total = Math.max(1, state.bookletPageCount);
+  state.bookletPage = ((index % total) + total) % total;
+  ui.bookletPages.style.transition = animate ? '' : 'none';
+  ui.bookletPages.style.transform = `translateX(-${state.bookletPage * 100}%)`;
+  if (!animate) requestAnimationFrame(() => { ui.bookletPages.style.transition = ''; });
+  $$('.booklet-dot').forEach((dot) => dot.classList.toggle('active', Number(dot.dataset.page) === state.bookletPage));
+}
+
+function openBooklet() {
+  if (!state.disc) return showToast('Insira um CD de áudio primeiro.');
+  state.bookletPage = 0;
+  renderBooklet();
+  openModal(ui.bookletModal);
+  setBookletPage(0, false);
+}
+
+function bindBookletDrag() {
+  let startX = 0;
+  let currentX = 0;
+  let dragging = false;
+
+  const onDown = (event) => {
+    dragging = true;
+    startX = event.clientX;
+    currentX = 0;
+    ui.bookletPages.classList.add('dragging');
+    ui.bookletPages.setPointerCapture(event.pointerId);
+  };
+  const onMove = (event) => {
+    if (!dragging) return;
+    currentX = event.clientX - startX;
+    const percent = (currentX / ui.bookletPages.clientWidth) * 100;
+    ui.bookletPages.style.transform = `translateX(calc(-${state.bookletPage * 100}% + ${percent}%))`;
+  };
+  const onUp = () => {
+    if (!dragging) return;
+    dragging = false;
+    ui.bookletPages.classList.remove('dragging');
+    const threshold = ui.bookletPages.clientWidth * 0.16;
+    if (currentX <= -threshold) setBookletPage(state.bookletPage + 1);
+    else if (currentX >= threshold) setBookletPage(state.bookletPage - 1);
+    else setBookletPage(state.bookletPage);
+  };
+
+  ui.bookletPages.addEventListener('pointerdown', onDown);
+  ui.bookletPages.addEventListener('pointermove', onMove);
+  ui.bookletPages.addEventListener('pointerup', onUp);
+  ui.bookletPages.addEventListener('pointercancel', onUp);
 }
 
 function renderArtist(details) {
@@ -207,6 +367,7 @@ async function refreshDisc() {
       state.revision = serverState.revision;
       if (discChanged) {
         state.currentTrack = 1;
+        state.bookletPage = 0;
       }
       renderDisc(incomingDisc);
       if (incomingDisc?.identified && incomingDisc?.metadata_ready) loadCollection();
@@ -230,13 +391,13 @@ async function refreshPlayerStatus() {
     ui.playerCard?.classList.toggle('is-paused', paused);
     ui.equalizer.classList.toggle('playing', playing);
     ui.vuDeck?.classList.toggle('playing', playing);
+    $('#bookletNowEq')?.classList.toggle('playing', playing);
     ui.playIcon.textContent = playing ? 'Ⅱ' : '▶';
     ui.playButton.setAttribute('aria-label', playing ? 'Pausar' : 'Reproduzir');
     if (Number.isFinite(Number(status.volume))) setVolumeVisual(Number(status.volume));
 
     if (typeof status.shuffle === 'boolean') state.shuffle = status.shuffle;
     if (status.repeat) state.repeat = status.repeat;
-    ui.autoAdvanceLed?.classList.toggle('active', status.auto_advance === true);
     ui.shuffleButton.classList.toggle('active', state.shuffle);
     ui.repeatButton.classList.toggle('active', state.repeat !== 'off');
     ui.repeatLabel.textContent = state.repeat === 'one' ? 'REP 1' : 'REP';
@@ -615,6 +776,12 @@ function bindEvents() {
   ui.repeatButton.addEventListener('click', async () => { state.repeat = state.repeat === 'off' ? 'all' : state.repeat === 'all' ? 'one' : 'off'; ui.repeatButton.classList.toggle('active', state.repeat !== 'off'); ui.repeatLabel.textContent = state.repeat === 'one' ? 'REP 1' : 'REP'; await updatePlaybackOptions(); showToast(state.repeat === 'one' ? 'Repetir faixa ativado.' : state.repeat === 'all' ? 'Repetir CD ativado.' : 'Repetição desativada.'); });
   ui.lyricsQuickButton.addEventListener('click', () => { setPanel('lyricsPanel'); loadLyrics(state.currentTrack); });
   ui.coverImage.addEventListener('error', () => { ui.coverImage.src = '/static/img/disc-placeholder.svg'; });
+  ui.bookletTriggerCover.addEventListener('error', () => { ui.bookletTriggerCover.src = '/static/img/disc-placeholder.svg'; });
+
+  ui.bookletTrigger.addEventListener('click', openBooklet);
+  ui.bookletPrev.addEventListener('click', () => setBookletPage(state.bookletPage - 1));
+  ui.bookletNext.addEventListener('click', () => setBookletPage(state.bookletPage + 1));
+  bindBookletDrag();
 
   ui.progressRange.addEventListener('input', () => { state.seeking = true; ui.elapsedTime.textContent = formatTime(ui.progressRange.value); });
   ui.progressRange.addEventListener('change', async () => { try { await api('/api/player/seek', { method: 'POST', body: JSON.stringify({ seconds: Number(ui.progressRange.value) }) }); } catch (error) { showToast(error.message); } finally { state.seeking = false; } });
@@ -637,6 +804,12 @@ function bindEvents() {
 
   document.addEventListener('keydown', (event) => {
     if (event.target.matches('input, textarea, select')) return;
+    if (ui.bookletModal.classList.contains('open')) {
+      if (event.key === 'ArrowLeft') { event.preventDefault(); setBookletPage(state.bookletPage - 1); }
+      if (event.key === 'ArrowRight') { event.preventDefault(); setBookletPage(state.bookletPage + 1); }
+      if (event.key === 'Escape') closeModal(ui.bookletModal);
+      return;
+    }
     if (event.code === 'Space') { event.preventDefault(); togglePlay(); }
     if (event.key === 'ArrowLeft') previousTrack();
     if (event.key === 'ArrowRight') nextTrack();

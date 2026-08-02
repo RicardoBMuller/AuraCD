@@ -15,7 +15,7 @@ from urllib.parse import quote, quote_plus, unquote, urlparse
 import requests
 
 
-CACHE_SCHEMA = 4
+CACHE_SCHEMA = 5
 
 
 class JsonCache:
@@ -199,6 +199,7 @@ class MetadataService:
             "year": "",
             "country": "",
             "cover_url": "/static/img/disc-placeholder.svg",
+            "booklet_images": [],
             "source": "toc",
             "submission_url": toc.get("submission_url"),
             "tracks": [
@@ -336,7 +337,7 @@ class MetadataService:
         local, domain = contact.split("@", 1)
         local = re.sub(r"[^A-Za-z0-9._-]", "", local) or "auracd"
         domain = re.sub(r"[^A-Za-z0-9.-]", "", domain) or "example.com"
-        hello = f"{local} {domain} AuraCD 2.7"
+        hello = f"{local} {domain} AuraCD 2.6"
         response = self.session.get(
             "https://gnudb.gnudb.org/~cddb/cddb.cgi",
             params={"cmd": command, "hello": hello, "proto": 6},
@@ -555,6 +556,7 @@ class MetadataService:
             "year": date[:4] if len(date) >= 4 else "",
             "country": payload.get("country") or "",
             "cover_url": f"https://coverartarchive.org/release/{release_id}/front-500",
+            "booklet_images": self.get_booklet_images(release_id),
             "source": source,
             "submission_url": toc.get("submission_url"),
             "tracks": tracks,
@@ -704,8 +706,15 @@ class MetadataService:
                 pass
 
         wiki = self._wikipedia_summary_from_url(wikipedia_url) if wikipedia_url else None
-        if not wiki:
-            wiki = self._search_wikipedia(artist_name)
+        if not wiki or not self._looks_musical(wiki.get("extract") or ""):
+            # Mesmo quando o MusicBrainz aponta um link direto para a
+            # Wikipedia, ele pode (raramente) estar mal curado e cair numa
+            # página de desambiguação errada. Por isso também validamos esse
+            # resultado e, se não parecer falar de música, tentamos a busca
+            # como reforço — só substituindo se a busca trouxer algo melhor.
+            searched = self._search_wikipedia(artist_name)
+            if searched and (not wiki or self._looks_musical(searched.get("extract") or "")):
+                wiki = searched
         if wiki:
             result["biography"] = wiki.get("extract") or result["biography"]
             result["image"] = wiki.get("image")
@@ -713,6 +722,49 @@ class MetadataService:
 
         self.cache.set(cache_key, result)
         return result
+
+    def get_booklet_images(self, release_id: str | None) -> list[dict[str, Any]]:
+        """Busca páginas reais do encarte (booklet) digitalizado no Cover Art Archive.
+
+        Só retorna imagens marcadas como Booklet/Liner — ou seja, o
+        encarte oficial de verdade, não a capa/contracapa. Quando o release
+        não tem nada disso arquivado (comum), retorna uma lista vazia e o
+        app usa as páginas digitais (faixas, sobre o álbum) como conteúdo.
+        """
+        if not release_id:
+            return []
+        cache_key = f"v{CACHE_SCHEMA}:booklet:{release_id}"
+        cached = self.cache.get(cache_key, max_age=60 * 60 * 24 * 30)
+        if cached is not None:
+            return cached
+
+        images: list[dict[str, Any]] = []
+        try:
+            payload = self._get_json(
+                f"https://coverartarchive.org/release/{quote(release_id)}",
+                headers=self._headers(),
+                allow_404=True,
+            )
+        except requests.RequestException:
+            payload = None
+
+        if payload:
+            wanted_types = {"booklet", "liner"}
+            candidates: list[tuple[int, dict[str, Any]]] = []
+            for item in payload.get("images") or []:
+                types = {str(t).lower() for t in (item.get("types") or [])}
+                if not (types & wanted_types):
+                    continue
+                thumbnails = item.get("thumbnails") or {}
+                url = thumbnails.get("large") or item.get("image")
+                if not url:
+                    continue
+                candidates.append((int(item.get("id") or 0), {"url": url, "comment": str(item.get("comment") or "")}))
+            candidates.sort(key=lambda entry: entry[0])
+            images = [entry[1] for entry in candidates][:14]
+
+        self.cache.set(cache_key, images)
+        return images
 
     def _wikipedia_summary_from_url(self, url: str | None) -> dict[str, Any] | None:
         if not url:
@@ -755,31 +807,56 @@ class MetadataService:
         except requests.RequestException:
             return None
 
+    _MUSIC_HINT_WORDS = (
+        "banda", "música", "musical", "álbum", "album", "cantor", "cantora", "compositor",
+        "compositora", "gravadora", "canção", "canções", "discografia", "vocalista", "baixista",
+        "guitarrista", "baterista", "rock", "metal", "punk", "pop ", "hip hop", "grupo musical",
+        "band", "music group", "singer", "songwriter", "record label", "musician", "discography",
+        "rock band", "metal band", "recording artist",
+    )
+
+    @classmethod
+    def _looks_musical(cls, extract: str) -> bool:
+        lowered = (extract or "").lower()
+        return any(word in lowered for word in cls._MUSIC_HINT_WORDS)
+
     def _search_wikipedia(self, artist_name: str) -> dict[str, Any] | None:
         if not artist_name or artist_name == "Artista desconhecido":
             return None
+        # Nomes de artistas que coincidem com palavras comuns (ex.: a banda
+        # "Penumbra") podem trazer o artigo errado se aceitarmos cegamente o
+        # primeiro resultado da busca. Por isso avaliamos alguns candidatos —
+        # incluindo variações com "banda/band" — e preferimos o primeiro que
+        # realmente parece falar de um artista musical, mas sempre guardamos
+        # o primeiro resultado como reserva para não deixar de mostrar nada.
+        fallback: dict[str, Any] | None = None
         for language in ("pt", "en"):
-            try:
-                payload = self._get_json(
-                    f"https://{language}.wikipedia.org/w/api.php",
-                    params={
-                        "action": "query",
-                        "list": "search",
-                        "srsearch": artist_name,
-                        "srlimit": 1,
-                        "format": "json",
-                        "formatversion": 2,
-                    },
-                    headers=self._headers(),
-                ) or {}
+            for query in (artist_name, f"{artist_name} banda", f"{artist_name} band"):
+                try:
+                    payload = self._get_json(
+                        f"https://{language}.wikipedia.org/w/api.php",
+                        params={
+                            "action": "query",
+                            "list": "search",
+                            "srsearch": query,
+                            "srlimit": 4,
+                            "format": "json",
+                            "formatversion": 2,
+                        },
+                        headers=self._headers(),
+                    ) or {}
+                except requests.RequestException:
+                    continue
                 results = (payload.get("query") or {}).get("search") or []
-                if results:
-                    page = self._wikipedia_page(language, results[0]["title"])
-                    if page:
+                for item in results:
+                    page = self._wikipedia_page(language, item.get("title") or "")
+                    if not page or not page.get("extract"):
+                        continue
+                    if fallback is None:
+                        fallback = page
+                    if self._looks_musical(page["extract"]):
                         return page
-            except requests.RequestException:
-                continue
-        return None
+        return fallback
 
     # ------------------------------------------------------------------
     # Letras

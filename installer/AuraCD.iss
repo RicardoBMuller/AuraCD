@@ -1,5 +1,5 @@
 #ifndef MyAppVersion
-  #define MyAppVersion "2.7.0"
+  #define MyAppVersion "2.6.0"
 #endif
 
 #define MyAppName "AuraCD"
@@ -35,7 +35,7 @@ CloseApplications=yes
 CloseApplicationsFilter=AuraCD.exe
 RestartApplications=no
 SetupLogging=yes
-AppMutex=Local\AuraCD_Player_2_7
+AppMutex=Local\AuraCD_Player_2_6
 VersionInfoVersion={#MyAppVersion}.0
 VersionInfoCompany={#MyAppPublisher}
 VersionInfoDescription=Instalador do AuraCD

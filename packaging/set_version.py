@@ -16,9 +16,9 @@ def replace(path: Path, pattern: str, replacement: str) -> None:
 
 
 def main() -> None:
-    version = (sys.argv[1] if len(sys.argv) > 1 else "2.7.0").strip().lstrip("v")
+    version = (sys.argv[1] if len(sys.argv) > 1 else "2.6.0").strip().lstrip("v")
     if not re.fullmatch(r"\d+\.\d+\.\d+", version):
-        raise SystemExit("Use uma versão no formato X.Y.Z, por exemplo 2.7.0")
+        raise SystemExit("Use uma versão no formato X.Y.Z, por exemplo 2.6.0")
 
     major, minor, patch = (int(item) for item in version.split("."))
     replace(ROOT / "app.py", r'APP_VERSION = "[^"]+"', f'APP_VERSION = "{version}"')

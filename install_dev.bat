@@ -5,7 +5,7 @@ title AuraCD - Instalacao
 
 cls
 echo ==========================================================
-echo   AuraCD 2.7 - Instalacao local
+echo   AuraCD 2.6 - Instalacao local
 echo ==========================================================
 echo.
 
@@ -53,7 +53,7 @@ if errorlevel 1 goto :error
 ".venv\Scripts\python.exe" -m py_compile app.py auracd\cd_player.py auracd\metadata.py auracd\settings.py auracd\demo_player.py auracd\libdiscid_reader.py auracd\collection.py
 if errorlevel 1 goto :error
 
-> .install_2_7_ok echo AuraCD 2.7 instalado em %DATE% %TIME%
+> .install_2_6_ok echo AuraCD 2.6 instalado em %DATE% %TIME%
 
 echo.
 echo ==========================================================

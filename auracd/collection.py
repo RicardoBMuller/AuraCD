@@ -106,7 +106,7 @@ class CollectionStore:
             response = requests.get(
                 source_url,
                 timeout=10,
-                headers={"User-Agent": "AuraCD/2.7 personal collection"},
+                headers={"User-Agent": "AuraCD/2.6 personal collection"},
                 allow_redirects=True,
             )
             response.raise_for_status()
